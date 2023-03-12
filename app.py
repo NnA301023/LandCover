@@ -6,11 +6,11 @@ reference:
 # load libraries 
 import os
 import tempfile
-import cv2 as cv
 import numpy as np
 import pandas as pd
 from PIL import Image
 import streamlit as st
+from numpy import asarray
 from model import ShuffleNetV2
 import matplotlib.pyplot as plt
 from warnings import filterwarnings
@@ -31,10 +31,13 @@ alter_df = pd.DataFrame({'Model':['Bare', 'Sedang', 'Tinggi']})
 _class = {0 : "bare", 1 : "sedang", 2 : "tinggi"}
 
 # helper function
-def preprocess_image(image_array):
+def preprocess_image(image_path):
     
     # resize image into 32 x 32 x 3
-    image = cv.resize(image_array, (32, 32))
+    # image = cv.resize(image_array, (32, 32))
+    image = Image.open(image_path).resize((32, 32))
+    image = asarray(image)
+    print(image.shape)
 
     # normalize image
     image = image / 255.0
@@ -44,10 +47,10 @@ def preprocess_image(image_array):
 
     # predict
     result = model.predict(image) 
-    print(result)
+    # print(result)
     # update acc
     alter_df['Probs'] = result.tolist()[0]
-    print(result.tolist()[0])
+    # print(result.tolist()[0])
     # show plot of probs
     fig, ax = plt.subplots()
     ax.bar('Model', 'Probs', data = alter_df)
@@ -105,9 +108,11 @@ def preprocess_image(image_array):
 def preprocess_image_folder(folder_path):
 
     _class = {0 : "bare", 1 : "sedang", 2 : "tinggi"}
+    preprocess = lambda x: Image.open(x).resize((32, 32))
     
     # read image
-    list_image_array = [cv.resize(cv.imread(folder_path + file)[:, :, ::-1], (32, 32)) for file in os.listdir(folder_path)]
+    # list_image_array = [cv.resize(cv.imread(folder_path + file)[:, :, ::-1], (32, 32)) for file in os.listdir(folder_path)]
+    list_image_array = [preprocess(file) for file in os.listdir(folder_path)]
 
     # convert list as array
     list_image_array = np.array(list_image_array)
@@ -140,7 +145,7 @@ if select_mode == "Gambar":
         isPredict = col_2.button("Prediksi")
         if isPredict:
             # preprocess image
-            _class, score = preprocess_image(np.array(image))
+            _class, score = preprocess_image(file_image)
             st.success(f"Prediksi: {_class} ") 
             # (f"{_class} : {np.round(score, 2)}")
 
